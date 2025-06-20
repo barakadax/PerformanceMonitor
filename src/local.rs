@@ -1,4 +1,5 @@
-use tracing::{debug, error, info, trace, warn};
+use std::env::current_dir;
+use tracing::{info};
 
 mod custom_logging;
 use crate::custom_logging::init_logging;
@@ -10,20 +11,10 @@ use crate::args::Args;
 async fn main() {
     init_logging();
 
-    log_trace!("This is service runtime!");
+    let pwd: String = current_dir().unwrap().to_string_lossy().to_string();
 
     let args: Args = Args::new();
+    let command_to_run: String  = args.get_concat_args();
 
-    if args.positional_args.is_empty() {
-        log_warn!("No arguments provided.");
-    } else {
-        let concat: String  = args.get_concat_args();
-        log_info!(concat, "Arguments provided");
-
-        for (index, arg) in args.positional_args.iter().enumerate() {
-            log_debug!("Argument {}: \"{}\"", index, arg);
-        }
-    }
-
-    log_error!("This is an example error log.");
+    log_info!(pwd, command_to_run, "Arguments provided");
 }

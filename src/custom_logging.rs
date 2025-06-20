@@ -31,10 +31,6 @@ macro_rules! log_generic {
     ($level:ident, $fmt:literal $(, $arg:expr)* $(,)?) => {
         $level!(pid = std::process::id(), msg = format!($fmt $(, $arg)*));
     };
-
-    ($level:ident, $($arg:tt)+) => {
-        $level!(pid = std::process::id(), $($arg)+);
-    };
 }
 
 #[macro_export]

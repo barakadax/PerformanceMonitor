@@ -1,0 +1,45 @@
+[package]
+name = "performance-monitor"
+version = "0.1.0"
+edition = "2024"
+authors = ["Barak Taya"]
+description = "Tool that wraps your runtime & monitor performance"
+license = "AGPL-3.0"
+readme = "readme.md"
+rust-version = "1.87.0"
+
+[package.metadata]
+homepage = "https://barakadax.github.io/"
+repository = "https://github.com/barakadax/PerformaceMonitor"
+
+[dependencies]
+tokio = { version = "1.45.1", default-features = false, features = ["rt-multi-thread", "net", "process", "macros"] }
+sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "network", "system"] }
+clap = { version = "4.5.40", default-features = false, features = ["std", "derive"] }
+tracing = { version = "0.1.41", default-features = false, features = ["std", "attributes"] }
+tracing-subscriber = { version = "0.3.19", default-features = false, features = ["std", "env-filter", "fmt", "ansi", "json", "tracing-log", "local-time", "time"] }
+
+[dev-dependencies]
+criterion = { version = "0.6.0" }
+mockito = { version = "1.7.0" }
+tokio = { version = "1.45.1", default-features = false, features = ["macros"] }
+
+[target.'cfg(bin = "service")'.dependencies]
+dotenvy = { version = "0.15.7", features = ["clap"] }
+tonic = { version = "0.13.1", default-features = false, features = ["transport", "prost"] }
+prost = { version = "0.14.1", default-features = false, features = ["std", "derive"] }
+prost-types = { version = "0.14.1", default-features = false, features = ["std"] }
+opentelemetry = { version = "0.30.0", default-features = false, features = ["trace", "metrics", "logs"] }
+opentelemetry_sdk = { version = "0.30.0", default-features = false, features = ["trace", "metrics", "logs", "rt-tokio"] }
+tracing-opentelemetry = { version = "0.31.0", default-features = true }
+
+[target.'cfg(bin = "service")'.build-dependencies]
+tonic-build = { version = "0.13.1", default-features = true, features = ["cleanup-markdown"] }
+
+[[bin]]
+name = "local"
+path = "src/local.rs"
+
+[[bin]]
+name = "service"
+path = "src/service.rs"

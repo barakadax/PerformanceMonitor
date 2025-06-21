@@ -5,6 +5,8 @@ CPU, RAM, Disk, & Network
 local is to run from CLI
 service is to run as binary with VS code extension
 
+PS. not recommended for debugging other processes
+
 ## Pre steps for developers
 <ol>
     <li>Rust minimum version: 1.87.0</li>

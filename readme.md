@@ -17,3 +17,13 @@ cargo test
 cargo bench
 
 cargo build --release --bin local/service
+
+ctrl + c == stop
+
+ctrl + z == zombie
+
+kill -9 process_number == force kill
+
+jobs == see all zombies
+
+fg == return zombie

@@ -1,8 +1,10 @@
 use std::{
     borrow::Cow,
     process::{Child, Command, Output},
+    thread::sleep,
     time::{Duration, Instant},
 };
+use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 use tracing::{info, warn};
 
 use crate::duration::format_duration;
@@ -26,15 +28,39 @@ impl Process {
             .expect("Failed to spawn command");
 
         let child_pid: u32 = child.id();
+
+        let run: bool = true;
+        Self::pick_at_child_process(child_pid, run);
+
         let output: Output = child.wait_with_output().expect("Failed to wait on child");
+
         let duration: Duration = start_time.elapsed();
-        let duration_str: String = format_duration(duration);
 
         Process {
             command_to_run: command.to_string(),
             child_pid,
             output,
-            duration: duration_str,
+            duration: format_duration(duration),
+        }
+    }
+
+    fn pick_at_child_process(pid: u32, run: bool) {
+        let pid_for_monitor: Pid = Pid::from_u32(pid);
+        let mut sys: System = System::new_all();
+
+        while run {
+            sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
+            if let Some(process) = sys.process(pid_for_monitor) {
+                let status: ProcessStatus = process.status();
+                log_info!(
+                    child_process_status = status.to_string(),
+                    "Child process status"
+                );
+
+                sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+            } else {
+                break;
+            }
         }
     }
 

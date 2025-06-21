@@ -20,6 +20,7 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
+    <li>Optional: detach instead of child process</li>
     <li>Use sysinfo to get info for everything</li>
     <li>Coverage / Unit tests</li>
     <li>Integration with NodeJS TS: <a href="https://github.com/barakadax/PerformaceMonitorVScodeExtension">VS code extension repo</a></li>

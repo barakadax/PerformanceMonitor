@@ -26,6 +26,7 @@ cargo run --bin local python3 a.py
     <li>Use sysinfo to get info for everything</li>
     <li>Coverage / Unit tests</li>
     <li>Integration with NodeJS TS: <a href="https://github.com/barakadax/PerformaceMonitorVScodeExtension">VS code extension repo</a></li>
+    <li>GitHub actions build binary, run tests</li>
 </ul>
 
 ## commands

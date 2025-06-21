@@ -1,4 +1,4 @@
-use tracing::{info};
+use tracing::info;
 
 mod custom_logging;
 use crate::custom_logging::init_logging;

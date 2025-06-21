@@ -25,15 +25,11 @@ macro_rules! log_generic {
     };
 
     ($level:ident, $($key:ident = $val:expr),+ , $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(pid = std::process::id(), $($key = $val,)* msg = format!($fmt $(, $arg)*));
+        $level!(pid = std::process::id(), $($key = $val,)* msg = format_args!($fmt $(, $arg)*));
     };
 
     ($level:ident, $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(pid = std::process::id(), msg = format!($fmt $(, $arg)*));
-    };
-
-    ($level:ident, $($arg:tt)+) => {
-        $level!(pid = std::process::id(), $($arg)+);
+        $level!(pid = std::process::id(), msg = format_args!($fmt $(, $arg)*));
     };
 }
 

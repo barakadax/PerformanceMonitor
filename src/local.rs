@@ -24,7 +24,7 @@ async fn main() {
 
     log_info!(pwd = pwd, input = command_to_run, "Starting");
 
-    let process: Process = Process::run_process(&command_to_run);
+    let process: Process = Process::run_process(&command_to_run).await;
     process.stdout();
     process.stderr();
 

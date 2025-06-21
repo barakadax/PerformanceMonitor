@@ -93,6 +93,10 @@ impl Process {
                 let status: ProcessStatus = process.status();
                 last_status = Some(status.to_string());
 
+                if status == ProcessStatus::Zombie {
+                    break;
+                }
+
                 sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;

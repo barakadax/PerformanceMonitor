@@ -9,11 +9,18 @@ use std::{
     thread::sleep,
     time::{Duration, Instant},
 };
+
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 use tokio::{spawn, task::JoinHandle};
 use tracing::{debug, error, info, warn};
 
 use crate::duration::format_duration;
+
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 pub struct Process {
     pub command_to_run: String,
@@ -24,31 +31,33 @@ pub struct Process {
 
 impl Process {
     pub async fn run_process(command: &str) -> Self {
-        Self::init_process(command);
-
         let start_time: Instant = Instant::now();
-        let child: Child = Self::init_process(command);
 
+        let child: Child = Self::init_process(command);
         let child_pid: u32 = child.id();
 
         let force_stop_thread_gracefully: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
         let force_stop_thread_gracefully_clone: Arc<AtomicBool> =
             Arc::clone(&force_stop_thread_gracefully);
-        let last_status_awaitable: JoinHandle<Option<String>> = spawn(Self::pick_at_child_process(
+        /*let last_status_awaitable: JoinHandle<Option<String>> = spawn(Self::pick_at_child_process(
             child_pid,
             force_stop_thread_gracefully_clone,
-        ));
+        ));*/
+        Self::pick_at_child_process(
+            child_pid,
+            force_stop_thread_gracefully_clone,
+        ).await;
 
         let output: Output = child.wait_with_output().expect("Failed to wait on child");
         force_stop_thread_gracefully.store(false, Ordering::SeqCst);
 
-        let last_status: Option<String> = last_status_awaitable
+        /*let last_status: Option<String> = last_status_awaitable
             .await
             .expect("Failed to await child process status");
         log_debug!(
             child_process_death_status = last_status,
             "Validating child process status"
-        );
+        );*/
 
         let duration: Duration = start_time.elapsed();
 
@@ -61,28 +70,47 @@ impl Process {
     }
 
     fn init_process(command: &str) -> Child {
-        let mut terminal: &str = "sh";
-        let mut terminal_chain_args: &str = "-c";
-
         if OS == "windows" {
-            terminal = "cmd";
-            terminal_chain_args = "/C";
+            #[cfg(windows)]
+            {
+                const DETACHED_PROCESS: u32 = 0x00000008;
+                const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
+                return Command::new("cmd")
+                    .arg("/C")
+                    .arg(command)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+                    .spawn()
+                    .expect("Failed to spawn command");
+            }
         } else if OS != "macos" && OS != "linux" {
             log_error!("Running command on Unix-like OS: {}", command);
             process::exit(1);
         }
 
-        Command::new(terminal)
-            .arg(terminal_chain_args)
-            .arg(command)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("Failed to spawn command")
+        unsafe {
+            Command::new("sh")
+                .arg("-c")
+                .arg(command)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .pre_exec(|| {
+                    #[cfg(unix)]
+                    {
+                        libc::setsid();
+                    }
+                    Ok(())
+                })
+                .spawn()
+                .expect("Failed to spawn command")
+        }
     }
 
     async fn pick_at_child_process(pid: u32, run: Arc<AtomicBool>) -> Option<String> {
+        println!("Monitoring child process with PID: {}", pid);
         let pid_for_monitor: Pid = Pid::from_u32(pid);
         let mut sys: System = System::new_all();
         let mut last_status: Option<String> = None;
@@ -93,9 +121,11 @@ impl Process {
                 let status: ProcessStatus = process.status();
                 last_status = Some(status.to_string());
 
-                if status == ProcessStatus::Zombie {
+                println!("Status: {}", status);
+
+                /*if status == ProcessStatus::Zombie {
                     break;
-                }
+                }*/
 
                 sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
             } else {

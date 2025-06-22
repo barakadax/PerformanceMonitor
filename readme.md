@@ -5,7 +5,10 @@ CPU, RAM, Disk, & Network
 local is to run from CLI
 service is to run as binary with VS code extension
 
-PS. not recommended for debugging other processes
+Warnings: 
+<ul>
+    <li>Not supporting stopping/zombie child process, it will be treated as terminated process</li>
+</ul>
 
 ## Pre steps for developers
 <ol>
@@ -22,7 +25,8 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
-    <li>Optional: detach instead of child process</li>
+    <li>Optional: detach instead of child process, see branch: detach_child_process</li>
+    <li>Custom AVG calculator</li>
     <li>Use sysinfo to get info for everything</li>
     <li>Coverage / Unit tests</li>
     <li>Integration with NodeJS TS: <a href="https://github.com/barakadax/PerformaceMonitorVScodeExtension">VS code extension repo</a></li>
@@ -51,3 +55,10 @@ kill -9 process_number == force kill
 jobs == see all zombies
 
 fg == return zombie
+
+## Open cases created from working on this project:
+<ol>
+    <li>https://users.rust-lang.org/t/child-process-never-terminated-unix/130990</li>
+    <li>https://github.com/tokio-rs/tracing/issues/3321</li>
+    <li>https://github.com/tokio-rs/tracing/issues/3322</li>
+</ol>

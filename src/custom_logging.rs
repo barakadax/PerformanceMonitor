@@ -21,15 +21,15 @@ pub fn init_logging() {
 #[macro_export]
 macro_rules! log_generic {
     ($level:ident) => {
-        $level!(pid = std::process::id());
+        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id());
     };
 
     ($level:ident, $($key:ident = $val:expr),+ , $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(pid = std::process::id(), $($key = $val,)* msg = format_args!($fmt $(, $arg)*));
+        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id(), $($key = $val,)* msg = format_args!($fmt $(, $arg)*));
     };
 
     ($level:ident, $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(pid = std::process::id(), msg = format_args!($fmt $(, $arg)*));
+        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id(), msg = format_args!($fmt $(, $arg)*));
     };
 }
 

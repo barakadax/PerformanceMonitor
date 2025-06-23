@@ -69,19 +69,20 @@ impl LinkedList {
     pub fn average(&self) -> f64 {
         let mut pointer: Option<Rc<RefCell<Node>>> = self.head.as_ref().map(Rc::clone);
         let mut avg: f64 = 0.0;
-        let mut count: u32 = 0;
+        let mut count: f64 = 0.0;
 
         while let Some(node_rc) = pointer {
             let node: std::cell::Ref<'_, Node> = node_rc.borrow();
             if node.counter != 0 {
-                avg += node.sum as f64 / node.counter as f64;
-                count += 1;
+                let node_avg: f64 = node.sum as f64 / node.counter as f64;
+                avg = avg * (count / (count + 1.0)) + node_avg / (count + 1.0);
+                count += 1.0;
             }
             pointer = node.next.as_ref().map(Rc::clone);
         }
 
-        if count > 0 {
-            avg / count as f64
+        if count > 0.0 {
+            avg / count
         } else {
             0.0
         }

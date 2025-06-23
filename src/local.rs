@@ -13,6 +13,8 @@ use crate::process::Process;
 
 mod duration;
 
+mod avg;
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     init_logging();

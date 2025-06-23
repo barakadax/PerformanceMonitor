@@ -13,7 +13,6 @@ homepage = "https://barakadax.github.io/"
 repository = "https://github.com/barakadax/PerformaceMonitor"
 
 [dependencies]
-num-rational = { version = "0.4.2", default-features = true }
 tokio = { version = "1.45.1", default-features = false, features = ["rt-multi-thread", "net", "process", "macros"] }
 sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "network", "system"] }
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive"] }

@@ -2,24 +2,24 @@ use std::{
     borrow::Cow,
     env::consts::OS,
     process::{self, Child, Command, Output, Stdio},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
     thread::sleep,
     time::{Duration, Instant},
 };
+
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt;
+
+use crate::duration::format_duration;
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 use tokio::{spawn, task::JoinHandle};
 use tracing::{debug, error, info, warn};
-
-use crate::duration::format_duration;
 
 pub struct Process {
     pub command_to_run: String,
     pub child_pid: u32,
     pub output: Output,
     pub duration: String,
+    pub signal: String,
 }
 
 impl Process {
@@ -31,16 +31,21 @@ impl Process {
 
         let child_pid: u32 = child.id();
 
-        let force_stop_thread_gracefully: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
-        let force_stop_thread_gracefully_clone: Arc<AtomicBool> =
-            Arc::clone(&force_stop_thread_gracefully);
-        let last_status_awaitable: JoinHandle<Option<String>> = spawn(Self::pick_at_child_process(
-            child_pid,
-            force_stop_thread_gracefully_clone,
-        ));
+        let last_status_awaitable: JoinHandle<Option<String>> =
+            spawn(Self::pick_at_child_process(child_pid));
 
         let output: Output = child.wait_with_output().expect("Failed to wait on child");
-        force_stop_thread_gracefully.store(false, Ordering::SeqCst);
+
+        let signal: String = {
+            #[cfg(unix)]
+            {
+                format!("{:?}", output.status.signal())
+            }
+            #[cfg(windows)]
+            {
+                "unsupported".to_string()
+            }
+        };
 
         let last_status: Option<String> = last_status_awaitable
             .await
@@ -57,6 +62,7 @@ impl Process {
             child_pid,
             output,
             duration: format_duration(duration),
+            signal,
         }
     }
 
@@ -82,12 +88,12 @@ impl Process {
             .expect("Failed to spawn command")
     }
 
-    async fn pick_at_child_process(pid: u32, run: Arc<AtomicBool>) -> Option<String> {
+    async fn pick_at_child_process(pid: u32) -> Option<String> {
         let pid_for_monitor: Pid = Pid::from_u32(pid);
         let mut sys: System = System::new_all();
         let mut last_status: Option<String> = None;
 
-        while run.load(Ordering::SeqCst) {
+        loop {
             sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
             if let Some(process) = sys.process(pid_for_monitor) {
                 let status: ProcessStatus = process.status();
@@ -103,10 +109,6 @@ impl Process {
             }
         }
 
-        log_debug!(
-            graceful_stop_flag = run.load(Ordering::SeqCst),
-            "Thread is done"
-        );
         last_status
     }
 

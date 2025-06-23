@@ -32,7 +32,8 @@ async fn main() {
         command_ran = process.command_to_run,
         child_pid = process.child_pid,
         child_duration = process.duration,
-        exit_code = process.output.status.code().unwrap_or(-1),
+        child_exit_code = process.output.status.code().unwrap_or(-1),
+        child_exit_signal = process.signal,
         "Done"
     );
 }

@@ -5,11 +5,6 @@ CPU, RAM, Disk, & Network
 local is to run from CLI
 service is to run as binary with VS code extension
 
-Warnings: 
-<ul>
-    <li>Not supporting stopping/zombie child process, it will be treated as terminated process</li>
-</ul>
-
 ## Pre steps for developers
 <ol>
     <li>Rust minimum version: 1.87.0</li>
@@ -25,7 +20,6 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
-    <li>Optional: detach instead of child process, see branch: detach_child_process</li>
     <li>Custom AVG calculator</li>
     <li>Use sysinfo to get info for everything</li>
     <li>Coverage / Unit tests</li>

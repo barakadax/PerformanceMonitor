@@ -3,7 +3,7 @@ use std::{
     env::consts::OS,
     process::{self, Child, Command, Output, Stdio},
     thread::sleep,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 #[cfg(unix)]
@@ -34,18 +34,7 @@ impl Process {
         let last_status_awaitable: JoinHandle<Option<String>> =
             spawn(Self::pick_at_child_process(child_pid));
 
-        let output: Output = child.wait_with_output().expect("Failed to wait on child");
-
-        let signal: String = {
-            #[cfg(unix)]
-            {
-                format!("{:?}", output.status.signal())
-            }
-            #[cfg(windows)]
-            {
-                "unsupported".to_string()
-            }
-        };
+        let child_output: Output = child.wait_with_output().expect("Failed to wait on child");
 
         let last_status: Option<String> = last_status_awaitable
             .await
@@ -55,14 +44,12 @@ impl Process {
             "Validating child process status"
         );
 
-        let duration: Duration = start_time.elapsed();
-
         Process {
             command_to_run: command.to_string(),
             child_pid,
-            output,
-            duration: format_duration(duration),
-            signal,
+            duration: format_duration(start_time.elapsed()),
+            signal: Self::get_signal(&child_output),
+            output: child_output,
         }
     }
 
@@ -110,6 +97,17 @@ impl Process {
         }
 
         last_status
+    }
+
+    fn get_signal(output: &Output) -> String {
+        #[cfg(unix)]
+        {
+            format!("{:?}", output.status.signal())
+        }
+        #[cfg(windows)]
+        {
+            "unsupported".to_string()
+        }
     }
 
     pub fn stdout(&self) {

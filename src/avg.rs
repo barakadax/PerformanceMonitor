@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 pub struct Node {
     pub counter: u32,
-    pub sum: u128,
+    pub sum: u128,  // need to rethink this, biggest input u64 and I can't go over u32
     pub next: Option<Rc<RefCell<Node>>>,
 }
 

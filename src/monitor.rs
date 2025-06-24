@@ -1,13 +1,9 @@
+use crate::avg::LinkedList;
 use std::thread::sleep;
 use sysinfo::{
-    DiskUsage, MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System
+    DiskUsage, MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System,
 };
-use tokio::{
-    spawn,
-    join,
-    task::JoinHandle,
-};
-use crate::avg::LinkedList;
+use tokio::{join, spawn, task::JoinHandle};
 
 pub struct Monitor {
     pub max_memory_usage: u64,
@@ -18,12 +14,11 @@ impl Monitor {
     pub async fn monitor_process(pid: u32) -> Self {
         let pid_for_monitor: Pid = Pid::from_u32(pid);
 
-        let monitor_memory_awaitable: JoinHandle<u64> =
-            spawn(Self::max_memory(pid_for_monitor));
-        let avg_memory_awaitable: JoinHandle<f64> =
-            spawn(Self::avg_memory(pid_for_monitor));
+        let monitor_memory_awaitable: JoinHandle<u64> = spawn(Self::max_memory(pid_for_monitor));
+        let avg_memory_awaitable: JoinHandle<f64> = spawn(Self::avg_memory(pid_for_monitor));
 
-        let (max_memory_usage_res, avg_memory_usage_res) = join!(monitor_memory_awaitable, avg_memory_awaitable);
+        let (max_memory_usage_res, avg_memory_usage_res) =
+            join!(monitor_memory_awaitable, avg_memory_awaitable);
 
         Monitor {
             max_memory_usage: max_memory_usage_res.unwrap_or(0),

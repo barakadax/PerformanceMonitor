@@ -28,8 +28,7 @@ impl Process {
 
         let child_pid: u32 = child.id().unwrap_or(0);
 
-        let monitor_awaitable: JoinHandle<Monitor> =
-            spawn(Monitor::monitor_process(child_pid));
+        let monitor_awaitable: JoinHandle<Monitor> = spawn(Monitor::monitor_process(child_pid));
 
         let child_output: Output = child
             .wait_with_output()

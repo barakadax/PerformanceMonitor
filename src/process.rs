@@ -7,7 +7,7 @@ use std::{
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
-use crate::{args::Args, duration::format_duration};
+use crate::{args::Args, duration::format_duration, monitor::dunno};
 use sysinfo::{MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System};
 use tokio::{
     process::{Child, Command},
@@ -32,6 +32,8 @@ impl Process {
 
         let last_status_awaitable: JoinHandle<Option<String>> =
             spawn(Self::pick_at_child_process(child_pid));
+
+        spawn(dunno(child_pid));
 
         let child_output: Output = child
             .wait_with_output()

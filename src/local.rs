@@ -13,6 +13,8 @@ use crate::process::Process;
 
 mod duration;
 
+mod monitor;
+
 mod avg;
 
 #[tokio::main(flavor = "multi_thread")]

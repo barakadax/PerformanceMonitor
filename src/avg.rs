@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Node {
     pub counter: u32,
@@ -46,7 +46,8 @@ impl LinkedList {
             let cursor_node_borrow: std::cell::Ref<'_, Node> = cursor_rc.borrow();
             if cursor_node_borrow.can_add_data(value) {
                 drop(cursor_node_borrow);
-                let mut cursor_node_mut_borrow: std::cell::RefMut<'_, Node> = cursor_rc.borrow_mut();
+                let mut cursor_node_mut_borrow: std::cell::RefMut<'_, Node> =
+                    cursor_rc.borrow_mut();
                 cursor_node_mut_borrow.add_data_in_place(value);
                 return;
             }
@@ -81,10 +82,6 @@ impl LinkedList {
             pointer = node.next.as_ref().map(Rc::clone);
         }
 
-        if count > 0.0 {
-            avg / count
-        } else {
-            0.0
-        }
+        if count > 0.0 { avg / count } else { 0.0 }
     }
 }

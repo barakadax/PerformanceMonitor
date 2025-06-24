@@ -1,7 +1,5 @@
 use std::{
-    borrow::Cow,
-    env::consts::OS,
-    process::{self, Child, Command, Output, Stdio},
+    process::{Output, Stdio},
     thread::sleep,
     time::Instant,
 };
@@ -9,13 +7,16 @@ use std::{
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
-use crate::duration::format_duration;
-use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
-use tokio::{spawn, task::JoinHandle};
-use tracing::{debug, error, info, warn};
+use crate::{args::Args, duration::format_duration};
+use sysinfo::{MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System};
+use tokio::{
+    process::{Child, Command},
+    spawn,
+    task::JoinHandle,
+};
+use tracing::debug;
 
 pub struct Process {
-    pub command_to_run: String,
     pub child_pid: u32,
     pub output: Output,
     pub duration: String,
@@ -23,29 +24,29 @@ pub struct Process {
 }
 
 impl Process {
-    pub async fn run_process(command: &str) -> Self {
-        Self::init_process(command);
-
+    pub async fn run_process(args: Args) -> Self {
         let start_time: Instant = Instant::now();
-        let child: Child = Self::init_process(command);
+        let child: Child = Self::init_process(args);
 
-        let child_pid: u32 = child.id();
+        let child_pid: u32 = child.id().unwrap_or(0);
 
         let last_status_awaitable: JoinHandle<Option<String>> =
             spawn(Self::pick_at_child_process(child_pid));
 
-        let child_output: Output = child.wait_with_output().expect("Failed to wait on child");
+        let child_output: Output = child
+            .wait_with_output()
+            .await
+            .expect("Failed to wait on child");
 
         let last_status: Option<String> = last_status_awaitable
             .await
             .expect("Failed to await child process status");
-        log_debug!(
+        debug!(
             child_process_death_status = last_status,
             "Validating child process status"
         );
 
         Process {
-            command_to_run: command.to_string(),
             child_pid,
             duration: format_duration(start_time.elapsed()),
             signal: Self::get_signal(&child_output),
@@ -53,24 +54,15 @@ impl Process {
         }
     }
 
-    fn init_process(command: &str) -> Child {
-        let mut terminal: &str = "sh";
-        let mut terminal_chain_args: &str = "-c";
-
-        if OS == "windows" {
-            terminal = "cmd";
-            terminal_chain_args = "/C";
-        } else if OS != "macos" && OS != "linux" {
-            log_error!("Running command on Unix-like OS: {}", command);
-            process::exit(1);
+    fn init_process(args: Args) -> Child {
+        let mut cmd: Command = Command::new(&args.positional_args[0]);
+        for arg in &args.positional_args[1..] {
+            cmd.arg(arg);
         }
 
-        Command::new(terminal)
-            .arg(terminal_chain_args)
-            .arg(command)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+        cmd.stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .spawn()
             .expect("Failed to spawn command")
     }
@@ -90,7 +82,7 @@ impl Process {
                     break;
                 }
 
-                sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+                sleep(MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;
             }
@@ -107,24 +99,6 @@ impl Process {
         #[cfg(windows)]
         {
             "unsupported".to_string()
-        }
-    }
-
-    pub fn stdout(&self) {
-        let stdout: Cow<'_, str> = String::from_utf8_lossy(&self.output.stdout);
-        for line in stdout.lines() {
-            if !line.trim().is_empty() {
-                log_info!(child_message = line.trim(), "stdout from child process");
-            }
-        }
-    }
-
-    pub fn stderr(&self) {
-        let stderr: Cow<'_, str> = String::from_utf8_lossy(&self.output.stderr);
-        for line in stderr.lines() {
-            if !line.trim().is_empty() {
-                log_warn!(child_error = line.trim(), "stderr from child process");
-            }
         }
     }
 }

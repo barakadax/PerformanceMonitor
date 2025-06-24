@@ -7,5 +7,5 @@ use crate::custom_logging::init_logging;
 async fn main() {
     init_logging();
 
-    log_info!("Need to GRPC server here");
+    info!("Need to GRPC server here");
 }

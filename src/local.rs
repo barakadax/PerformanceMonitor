@@ -19,20 +19,14 @@ mod avg;
 async fn main() {
     init_logging();
 
-    let pwd: String = current_dir().unwrap().to_string_lossy().to_string();
-
     let args: Args = Args::new();
     let command_to_run: String = args.get_concat_args();
 
-    log_info!(pwd = pwd, input = command_to_run, "Starting");
+    let process: Process = Process::run_process(args).await;
 
-    let process: Process = Process::run_process(&command_to_run).await;
-
-    process.stdout();
-    process.stderr();
-
-    log_info!(
-        command_ran = process.command_to_run,
+    info!(
+        pwd = current_dir().unwrap().to_string_lossy().to_string(),
+        command_to_run,
         child_pid = process.child_pid,
         child_duration = process.duration,
         child_exit_code = process.output.status.code().unwrap_or(-1),

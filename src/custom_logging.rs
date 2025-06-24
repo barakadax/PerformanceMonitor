@@ -1,84 +1,26 @@
 pub fn init_logging() {
-    use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+    use json_subscriber::{
+        JsonLayer,
+        fmt::{Layer, layer},
+    };
+    use std::process::id;
+    use tracing_subscriber::{layer::SubscriberExt, registry, util::SubscriberInitExt};
 
-    tracing_subscriber::registry()
-        .with(EnvFilter::from_default_env())
-        .with(
-            fmt::layer().event_format(
-                fmt::format()
-                    .json()
-                    .with_level(true)
-                    .with_thread_ids(true)
-                    .with_file(true)
-                    .with_line_number(true)
-                    .with_target(false)
-                    .flatten_event(true),
-            ),
-        )
-        .init();
-}
+    let mut json_layer: Layer = layer()
+        .with_level(true)
+        .with_line_number(true)
+        .with_target(false)
+        .flatten_event(true);
 
-#[macro_export]
-macro_rules! log_generic {
-    ($level:ident) => {
-        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id());
-    };
+    let inner_layer: &mut JsonLayer = json_layer.inner_layer_mut();
 
-    ($level:ident, $($key:ident = $val:expr),+ , $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id(), $($key = $val,)* msg = format_args!($fmt $(, $arg)*));
-    };
+    inner_layer.with_thread_ids("thread_id");
+    inner_layer.with_file("file_name");
 
-    ($level:ident, $fmt:literal $(, $arg:expr)* $(,)?) => {
-        $level!(logger = "tracing", app = "performance monitor", pid = std::process::id(), msg = format_args!($fmt $(, $arg)*));
-    };
-}
+    inner_layer.add_static_field("app", "performance monitor".into());
+    inner_layer.add_static_field("logger", "tracing".into());
 
-#[macro_export]
-macro_rules! log_info {
-    () => {
-        $crate::log_generic!(info);
-    };
-    ($($arg:tt)+) => {
-        $crate::log_generic!(info, $($arg)+);
-    };
-}
+    inner_layer.add_dynamic_field("pid", |_, _| Some(id()));
 
-#[macro_export]
-macro_rules! log_warn {
-    () => {
-        $crate::log_generic!(warn);
-    };
-    ($($arg:tt)+) => {
-        $crate::log_generic!(warn, $($arg)+);
-    };
-}
-
-#[macro_export]
-macro_rules! log_debug {
-    () => {
-        $crate::log_generic!(debug);
-    };
-    ($($arg:tt)+) => {
-        $crate::log_generic!(debug, $($arg)+);
-    };
-}
-
-#[macro_export]
-macro_rules! log_error {
-    () => {
-        $crate::log_generic!(error);
-    };
-    ($($arg:tt)+) => {
-        $crate::log_generic!(error, $($arg)+);
-    };
-}
-
-#[macro_export]
-macro_rules! log_trace {
-    () => {
-        $crate::log_generic!(trace);
-    };
-    ($($arg:tt)+) => {
-        $crate::log_generic!(trace, $($arg)+);
-    };
+    registry().with(json_layer).init();
 }

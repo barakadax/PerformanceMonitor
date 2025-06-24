@@ -33,6 +33,8 @@ async fn main() {
         child_duration = process.duration,
         child_exit_code = process.output.status.code().unwrap_or(-1),
         child_exit_signal = process.signal,
+        child_max_memory_usage_in_bytes = process.monitor.max_memory_usage,
+        child_avg_memory_usage_in_bytes = process.monitor.avg_memory_usage,
         "Done"
     );
 }

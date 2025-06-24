@@ -32,8 +32,8 @@ impl Node {
 }
 
 impl LinkedList {
-    pub fn new(counter: u32, sum: u128) -> Self {
-        let initial_node: Rc<RefCell<Node>> = Node::new(counter, sum);
+    pub fn new() -> Self {
+        let initial_node: Rc<RefCell<Node>> = Node::new(0, 0);
         LinkedList {
             head: Some(Rc::clone(&initial_node)),
             cursor: Some(initial_node),

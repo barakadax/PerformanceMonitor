@@ -33,8 +33,21 @@ async fn main() {
         child_duration = process.duration,
         child_exit_code = process.output.status.code().unwrap_or(-1),
         child_exit_signal = process.signal,
-        child_max_memory_usage_in_bytes = process.monitor.max_memory_usage,
-        child_avg_memory_usage_in_bytes = process.monitor.avg_memory_usage,
+        child_max_memory_in_bytes = process.monitor.max_memory,
+        child_avg_memory_in_bytes = process.monitor.avg_memory,
+        child_min_memory_in_bytes = process.monitor.min_memory,
+        child_max_virtual_memory_in_bytes = process.monitor.max_virtual_memory,
+        child_avg_virtual_memory_in_bytes = process.monitor.avg_virtual_memory,
+        child_min_virtual_memory_in_bytes = process.monitor.min_virtual_memory,
+        child_max_cpu = process.monitor.max_cpu,
+        child_avg_cpu = process.monitor.avg_cpu,
+        child_min_cpu = process.monitor.min_cpu,
+        child_disk_read_max = process.monitor.read_max,
+        child_disk_read_avg = process.monitor.read_avg,
+        child_disk_read_min = process.monitor.read_min,
+        child_disk_write_max = process.monitor.write_max,
+        child_disk_write_avg = process.monitor.write_avg,
+        child_disk_write_min = process.monitor.write_min,
         "Done"
     );
 }

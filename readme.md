@@ -23,6 +23,8 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
+    <li>Add types and translation of sizes</li>
+    <li>Add log to know where the monitor.json was created</li>
     <li>Find replacement for sysinfo to get network information, best option `pcap` for win and mac works out of the box for unix based needs to install `libpcap` & run with `CAP_NET_RAW` privilege</li>
     <li>Find replacement for sysinfo to get GPU information</li>
     <li>Coverage / Unit tests</li>
@@ -41,4 +43,10 @@ cargo test
 
 cargo bench
 
-cargo build --release --bin local/service
+Compile command: cargo build --target i686-pc-windows-gnu --bin local/service --release
+How to run: ./target/x86_64-unknown-linux-gnu/release/local python3 /home/barakadax/Desktop/codes/RustPref/a.py
+
+Other OS compile commands:
+cargo build --target x86_64-pc-windows-gnu --bin local/service --release
+cargo build --target x86_64-apple-darwin --bin local/service --release
+cargo build --target x86_64-unknown-linux-gnu --bin local/service --release

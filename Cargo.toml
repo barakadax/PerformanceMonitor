@@ -13,12 +13,20 @@ homepage = "https://barakadax.github.io/"
 repository = "https://github.com/barakadax/PerformaceMonitor"
 
 [dependencies]
+serde = { version = "1.0.219", default-features = false, features = ["std", "derive", "alloc", "rc"] }
+serde_json = { version = "1.0.140", default-features = false, features = ["std", "alloc"] }
 tokio = { version = "1.45.1", default-features = false, features = ["rt-multi-thread", "net", "process", "macros", "io-util"] }
 sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "network", "system"] }
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive"] }
 tracing = { version = "0.1.41", default-features = false, features = ["std", "attributes"] }
 tracing-subscriber = { version = "0.3.19", default-features = false, features = ["std", "env-filter", "fmt", "ansi", "json", "tracing-log", "local-time", "time"] }
 json-subscriber = { version = "0.2.5", default-features = false, features = ["async-trait", "env-filter"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+mach = { version = "0.3.2", default-features = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61.3", default-features = true }
 
 [dev-dependencies]
 criterion = { version = "0.6.0" }
@@ -27,15 +35,6 @@ tokio = { version = "1.45.1", default-features = false, features = ["macros"] }
 
 [target.'cfg(bin = "service")'.dependencies]
 dotenvy = { version = "0.15.7", features = ["clap"] }
-tonic = { version = "0.13.1", default-features = false, features = ["transport", "prost"] }
-prost = { version = "0.14.1", default-features = false, features = ["std", "derive"] }
-prost-types = { version = "0.14.1", default-features = false, features = ["std"] }
-opentelemetry = { version = "0.30.0", default-features = false, features = ["trace", "metrics", "logs"] }
-opentelemetry_sdk = { version = "0.30.0", default-features = false, features = ["trace", "metrics", "logs", "rt-tokio"] }
-tracing-opentelemetry = { version = "0.31.0", default-features = true }
-
-[target.'cfg(bin = "service")'.build-dependencies]
-tonic-build = { version = "0.13.1", default-features = true, features = ["cleanup-markdown"] }
 
 [[bin]]
 name = "local"

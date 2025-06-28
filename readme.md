@@ -15,6 +15,7 @@ OS supported: Windows & Unix based
             <li>RUST_LOG=debug</li>
         </ul>
     </li>
+    <li>In mac OS you need to run with taskgated permission & have SIP-disabled or just run as root</li>
 </ol>
 
 ## How to run:
@@ -22,8 +23,6 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
-    <li>Use sysinfo to get info for everything</li>
-    <li>Memory heap vs stack and usage</li>
     <li>Find replacement for sysinfo to get network information, best option `pcap` for win and mac works out of the box for unix based needs to install `libpcap` & run with `CAP_NET_RAW` privilege</li>
     <li>Find replacement for sysinfo to get GPU information</li>
     <li>Coverage / Unit tests</li>

@@ -10,12 +10,13 @@ OS supported: Windows & Unix based
 ## Pre steps for developers
 <ol>
     <li>Rust minimum version: 1.87.0</li>
+    <li>Must run as root / administrator</li>
     <li> <h3>Environment variables flags:</h3>
         <ul>
             <li>RUST_LOG=debug</li>
         </ul>
     </li>
-    <li>In mac OS you need to run with taskgated permission & have SIP-disabled or just run as root</li>
+    <li>In mac OS you need to run with taskgated permission & have SIP-disabled</li>
 </ol>
 
 ## How to run:
@@ -25,6 +26,7 @@ cargo run --bin local python3 a.py
 <ul>
     <li>Add types and translation of sizes</li>
     <li>Add log to know where the monitor.json was created</li>
+    <li>Stop (ctrl + c) only child process not everything, need to save results before</li>
     <li>Find replacement for sysinfo to get network information, best option `pcap` for win and mac works out of the box for unix based needs to install `libpcap` & run with `CAP_NET_RAW` privilege</li>
     <li>Find replacement for sysinfo to get GPU information</li>
     <li>Coverage / Unit tests</li>

@@ -24,7 +24,9 @@ cargo run --bin local python3 a.py
 
 ## TODO:
 <ul>
-    <li>Add types and translation of sizes</li>
+    <li>Add types & translation of bytes sizes</li>
+    <li>Monitor start of child process and make it a tree per child process</li>
+    <li>Per process list thread ids and have max amount of concurent threads</li>
     <li>Add log to know where the monitor.json was created</li>
     <li>Stop (ctrl + c) only child process not everything, need to save results before</li>
     <li>Find replacement for sysinfo to get network information, best option `pcap` for win and mac works out of the box for unix based needs to install `libpcap` & run with `CAP_NET_RAW` privilege</li>
@@ -35,20 +37,25 @@ cargo run --bin local python3 a.py
 </ul>
 
 ## commands
-cargo run --bin local python3 a.py
-
-cargo run --bin service python3 a.py
-
 cargo fmt
 
 cargo test
 
 cargo bench
 
-Compile command: cargo build --target i686-pc-windows-gnu --bin local/service --release
-How to run: ./target/x86_64-unknown-linux-gnu/release/local python3 /home/barakadax/Desktop/codes/RustPref/a.py
+cargo check
 
-Other OS compile commands:
+cargo build --bin local/service
+sudo ./target/debug/service python3 a.py
+
+## commands for ci/cd
+### Compile command:
+cargo build --target i686-pc-windows-gnu --bin local/service --release
+
+### How to run:
+sudo ./target/x86_64-unknown-linux-gnu/release/local python3 /home/barakadax/Desktop/codes/RustPref/a.py
+
+### Other OS compile commands:
 cargo build --target x86_64-pc-windows-gnu --bin local/service --release
 cargo build --target x86_64-apple-darwin --bin local/service --release
 cargo build --target x86_64-unknown-linux-gnu --bin local/service --release

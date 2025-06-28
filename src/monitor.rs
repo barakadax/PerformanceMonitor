@@ -271,6 +271,8 @@ impl Monitor {
                 if process.status() == ProcessStatus::Zombie {
                     break;
                 }
+            } else {
+                break;
             }
 
             let file: File = match File::open(&path) {

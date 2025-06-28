@@ -1,6 +1,3 @@
-mod custom_logging;
-use crate::custom_logging::init_logging;
-
 use pnet::datalink::{self, Channel::Ethernet};
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
@@ -13,8 +10,6 @@ use pnet::packet::ipv6::Ipv6Packet;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    init_logging();
-
     let interfaces: Vec<datalink::NetworkInterface> = datalink::interfaces();
     println!("Available interfaces:");
     for iface in &interfaces {
@@ -26,7 +21,9 @@ async fn main() {
         .find(|iface| iface.mac.is_some() && !iface.is_loopback())
         .expect("No suitable interface with MAC address found");
 
-    let (_, mut rx) = match datalink::channel(&interface, Default::default()) {
+    let mut config: datalink::Config = datalink::Config::default();
+    config.promiscuous = true;
+    let (_, mut rx) = match datalink::channel(&interface, config) {
         Ok(Ethernet(_tx, rx)) => (_tx, rx),
         Ok(_) => panic!("Unhandled channel type"),
         Err(e) => panic!("Failed to create datalink channel: {}", e),
@@ -50,7 +47,7 @@ async fn main() {
                         "Unknown"
                     };
                     let payload = eth_packet.payload();
-                    let mut port_info = String::from("N/A");
+                    let mut port_info: String = String::from("N/A");
                     let mut msg_size = payload.len();
                     let mut ip_version = "Other";
                     // Try IPv4 first
@@ -70,6 +67,7 @@ async fn main() {
                                 }
                             }
                             _ => {
+                                port_info = format!("{}", ipv4.get_next_level_protocol());
                                 msg_size = ipv4.payload().len();
                             }
                         }
@@ -89,11 +87,12 @@ async fn main() {
                                 }
                             }
                             _ => {
+                                port_info = format!("{}", ipv6.get_next_header());
                                 msg_size = ipv6.payload().len();
                             }
                         }
                     }
-                    println!("{} packet: {} port={} size={} bytes | {:?}", ip_version, direction, port_info, msg_size, eth_packet);
+                    println!("{} packet: {} protocol={} size={} bytes | {:?}", ip_version, direction, port_info, msg_size, eth_packet);
                 } else {
                     println!("Received non-Ethernet packet: {:?}", packet);
                 }

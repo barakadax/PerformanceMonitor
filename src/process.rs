@@ -17,7 +17,7 @@ use tokio::{
 
 #[derive(serde::Serialize)]
 pub struct Process {
-    pub child_pid: u32,
+    pub pid: u32,
     pub exit_status: i32,
     pub duration: String,
     pub signal: String,
@@ -29,9 +29,9 @@ impl Process {
         let start_time: Instant = Instant::now();
         let child: Child = Self::init_process(args);
 
-        let child_pid: u32 = child.id().unwrap_or(0);
+        let pid: u32 = child.id().unwrap_or(0);
 
-        let monitor_awaitable: JoinHandle<Monitor> = spawn(Monitor::monitor_process(child_pid));
+        let monitor_awaitable: JoinHandle<Monitor> = spawn(Monitor::monitor_process(pid));
 
         let child_output: Output = child
             .wait_with_output()
@@ -41,7 +41,7 @@ impl Process {
         let exit_status: i32 = child_output.status.code().unwrap_or_default();
 
         let res: Process = Process {
-            child_pid,
+            pid,
             exit_status,
             duration: format_duration(start_time.elapsed()),
             signal: Self::get_signal(&child_output),

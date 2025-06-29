@@ -1,13 +1,13 @@
 use crate::avg::LinkedList;
 use std::{
-    fs::File,
+    collections::HashSet,
+    fs::{self, File},
     io::{BufRead, BufReader},
     path::PathBuf,
-    thread::sleep,
     u64,
 };
 use sysinfo::{
-    DiskUsage, MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System,
+    DiskUsage, Pid, ProcessStatus, ProcessesToUpdate, System,
 };
 use tokio::{join, spawn, task::JoinHandle};
 use tracing::debug;
@@ -35,6 +35,10 @@ pub struct Monitor {
     pub heap_max: u64,
     pub heap_avg: f64,
     pub heap_min: u64,
+    pub max_concurrent_threads: u16,
+    pub thread_ids: Vec<u32>,
+    pub max_concurrent_child_processes: u16,
+    pub child_processes_pids: Vec<u32>,
 }
 
 impl Monitor {
@@ -51,13 +55,26 @@ impl Monitor {
             spawn(Self::disk(pid_for_monitor));
         let memory_allocation_awaitable: JoinHandle<((u64, f64, u64), (u64, f64, u64))> =
             spawn(Self::memory_allocation(pid));
+        let threads_awaitable: JoinHandle<(Vec<u32>, u16)> = spawn(Self::threads(pid));
+        let child_processes_awaitable: JoinHandle<(Vec<u32>, u16)> =
+            spawn(Self::child_processes(pid));
 
-        let (memory_res, virtual_memory_res, cpu_res, disk_res, memory_allocation_res) = join!(
+        let (
+            memory_res,
+            virtual_memory_res,
+            cpu_res,
+            disk_res,
+            memory_allocation_res,
+            threads_res,
+            child_processes_res,
+        ) = join!(
             memory_awaitable,
             virtual_memory_awaitable,
             cpu_awaitable,
             disk_awaitable,
-            memory_allocation_awaitable
+            memory_allocation_awaitable,
+            threads_awaitable,
+            child_processes_awaitable
         );
 
         let (max_memory, avg_memory, min_memory) = memory_res.unwrap_or((0, 0.0, 0));
@@ -68,6 +85,9 @@ impl Monitor {
             disk_res.unwrap_or(((0, 0.0, 0), (0, 0.0, 0)));
         let ((stack_max, stack_avg, stack_min), (heap_max, heap_avg, heap_min)) =
             memory_allocation_res.unwrap_or(((0, 0.0, 0), (0, 0.0, 0)));
+        let (thread_ids, max_concurrent_threads) = threads_res.unwrap_or((Vec::new(), 0));
+        let (child_processes_pids, max_concurrent_child_processes) =
+            child_processes_res.unwrap_or((Vec::new(), 0));
 
         Monitor {
             max_memory,
@@ -91,6 +111,10 @@ impl Monitor {
             heap_max,
             heap_avg,
             heap_min,
+            max_concurrent_threads,
+            thread_ids,
+            max_concurrent_child_processes,
+            child_processes_pids,
         }
     }
 
@@ -119,8 +143,6 @@ impl Monitor {
                 if status == ProcessStatus::Zombie {
                     break;
                 }
-
-                sleep(MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;
             }
@@ -154,8 +176,6 @@ impl Monitor {
                 if status == ProcessStatus::Zombie {
                     break;
                 }
-
-                sleep(MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;
             }
@@ -189,8 +209,6 @@ impl Monitor {
                 if status == ProcessStatus::Zombie {
                     break;
                 }
-
-                sleep(MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;
             }
@@ -235,8 +253,6 @@ impl Monitor {
                 if status == ProcessStatus::Zombie {
                     break;
                 }
-
-                sleep(MINIMUM_CPU_UPDATE_INTERVAL);
             } else {
                 break;
             }
@@ -271,6 +287,8 @@ impl Monitor {
                 if process.status() == ProcessStatus::Zombie {
                     break;
                 }
+            } else {
+                break;
             }
 
             let file: File = match File::open(&path) {
@@ -314,8 +332,6 @@ impl Monitor {
                     found_stack_flag = false;
                 }
             }
-
-            sleep(MINIMUM_CPU_UPDATE_INTERVAL);
         }
 
         (
@@ -481,5 +497,184 @@ impl Monitor {
             (stack_max, stack_avg.average(), stack_min),
             (heap_max, heap_avg.average(), heap_min),
         )
+    }
+
+    #[cfg(target_os = "linux")]
+    async fn threads(pid: u32) -> (Vec<u32>, u16) {
+        let pid_for_monitor: Pid = Pid::from_u32(pid);
+        let mut sys: System = System::new_all();
+        let mut threads: HashSet<_> = HashSet::new();
+        let path: String = format!("/proc/{}/task", pid);
+        let mut max: u16 = 0;
+
+        loop {
+            sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
+            if let Some(process) = sys.process(pid_for_monitor) {
+                if process.status() == ProcessStatus::Zombie {
+                    break;
+                }
+
+                if let Ok(entries) = fs::read_dir(&path) {
+                    let mut counter: u16 = 0;
+                    for entry in entries.flatten() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            if let Ok(tid) = name.parse::<u32>() {
+                                counter += 1;
+                                threads.insert(tid);
+                            }
+                        }
+                    }
+                    if max < counter {
+                        max = counter;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+        (threads.into_iter().collect(), max)
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn threads(pid: u32) -> (Vec<u32>, u16) {
+        use mach::{
+            kern_return::KERN_SUCCESS,
+            port::mach_port_t,
+            task::{task_for_pid, task_threads},
+            traps::mach_task_self,
+        };
+
+        let pid_for_monitor: Pid = Pid::from_u32(pid);
+        let mut sys: System = System::new_all();
+        let mut threads: HashSet<_> = HashSet::new();
+        let mut max: u16 = 0;
+
+        loop {
+            sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
+            if let Some(process) = sys.process(pid_for_monitor) {
+                if process.status() == ProcessStatus::Zombie {
+                    break;
+                }
+
+                if let Ok(entries) = fs::read_dir(&path) {
+                    let mut counter: u16 = 0;
+                    unsafe {
+                        let mut task: mach_port_t = 0;
+                        let kr = task_for_pid(mach_task_self(), pid as i32, &mut task);
+                        if kr != KERN_SUCCESS {
+                            break;
+                        }
+                        let mut thread_list: *mut mach_port_t = std::ptr::null_mut();
+                        let mut thread_count: u32 = 0;
+                        let kr = task_threads(task, &mut thread_list, &mut thread_count);
+                        if kr != KERN_SUCCESS {
+                            break;
+                        }
+                        for i in 0..thread_count {
+                            let tid = *thread_list.add(i as usize);
+                            threads.insert(tid as u32);
+                            counter += 1;
+                        }
+                    }
+                    if max < counter {
+                        max = counter;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+        (threads.into_iter().collect(), max)
+    }
+
+    #[cfg(target_os = "windows")] // I gave up need to learn how to implement later on
+    async fn threads(pid: u32) -> (Vec<u32>, u16) {
+        use std::mem::size_of;
+
+        #[cfg(target_pointer_width = "32")]
+        use windows::Win32::{
+            Foundation::{CloseHandle, HANDLE},
+            System::Diagnostics::ToolHelp::{
+                CreateToolhelp32Snapshot as CreateTooHelpSnapshot, TH32CS_SNAPTHREAD as SNAPTHREAD,
+                THREADENTRY32 as THREADENTRY, Thread32First as ThreadFirst,
+                Thread32Next as ThreadNext,
+            },
+        };
+
+        #[cfg(target_pointer_width = "64")]
+        use windows::Win64::{
+            Foundation::{CloseHandle, HANDLE},
+            System::Diagnostics::ToolHelp::{
+                CreateToolhelp64Snapshot as CreateTooHelpSnapshot, TH64CS_SNAPTHREAD as SNAPTHREAD,
+                THREADENTRY64 as THREADENTRY, Thread64First as ThreadFirst,
+                Thread64Next as ThreadNext,
+            },
+        };
+
+        let pid_for_monitor: Pid = Pid::from_u32(pid);
+        let mut sys: System = System::new_all();
+        let mut threads: HashSet<_> = HashSet::new();
+        let path: String = format!("/proc/{}/task", pid);
+        let mut max: u16 = 0;
+
+        (threads.into_iter().collect(), max)
+    }
+
+    #[cfg(target_os = "linux")] // replace with something like pstree
+    async fn child_processes(pid: u32) -> (Vec<u32>, u16) {
+        let mut sys: System = System::new_all();
+        let mut children: HashSet<u32> = HashSet::new();
+        let mut max: u16 = 0;
+
+        loop {
+            let pid_for_monitor: Pid = Pid::from_u32(pid);
+            sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
+            if let Some(process) = sys.process(pid_for_monitor) {
+                if process.status() == ProcessStatus::Zombie {
+                    break;
+                }
+            } else {
+                break;
+            }
+
+            if let Ok(entries) = fs::read_dir("/proc") {
+                let mut count: u16 = 0;
+                for entry in entries.flatten() {
+                    if let Some(name) = entry.file_name().to_str() {
+                        if let Ok(proc_pid) = name.parse::<u32>() {
+                            let stat_path: String = format!("/proc/{}/stat", proc_pid);
+                            if let Ok(stat) = fs::read_to_string(&stat_path) {
+                                let parts: Vec<&str> = stat.split_whitespace().collect();
+                                if parts.len() > 3 {
+                                    if let Ok(ppid) = parts[3].parse::<u32>() {
+                                        if ppid == pid {
+                                            count += 1;
+                                            children.insert(proc_pid);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if max < count {
+                    max = count;
+                }
+            }
+        }
+
+        (children.into_iter().collect(), max)
+    }
+
+    #[cfg(target_os = "macos")] // implement sometime
+    async fn child_processes(pid: u32) -> (Vec<u32>, u16) {
+        (Vec::new(), 0)
+    }
+
+    #[cfg(target_os = "windows")] // implement sometime
+    async fn child_processes(pid: u32) -> (Vec<u32>, u16) {
+        (Vec::new(), 0)
     }
 }

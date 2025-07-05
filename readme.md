@@ -25,6 +25,7 @@ cargo run --bin local python3 a.py
 <ul>
     <li>Add types and translation of sizes</li>
     <li>Add log to know where the monitor.json was created</li>
+    <li>check if min max has changed since creation or not</li>
     <li>Find replacement for sysinfo to get network information, best option `pcap` for win and mac works out of the box for unix based needs to install `libpcap` & run with `CAP_NET_RAW` privilege</li>
     <li>Finish support for mac & then windows</li>
     <li>Find replacement for sysinfo to get GPU information</li>

@@ -1,7 +1,6 @@
 use std::env::current_dir;
 use tracing::info;
 
-#[macro_use]
 mod custom_logging;
 use crate::custom_logging::init_logging;
 
@@ -14,6 +13,7 @@ use crate::process::Process;
 mod duration;
 
 mod monitor;
+mod monitoring;
 
 mod avg;
 

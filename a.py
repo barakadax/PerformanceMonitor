@@ -1,3 +1,4 @@
+
 import random
 import os
 import threading
@@ -5,7 +6,7 @@ import multiprocessing
 import time
 
 def thread_task(thread_num):
-    print(f"  Thread {thread_num} in process PID: {os.getpid()}, Thread ID: {threading.get_ident()}")
+    #print(f"  Thread {thread_num} in process PID: {os.getpid()}, Thread ID: {threading.get_ident()}")
     s = 0
     for i in range(10**6):
         s += i * i
@@ -20,7 +21,8 @@ def thread_task(thread_num):
         with open('/proc/sys/vm/drop_caches', 'w') as drop:
             drop.write('3\n')
     except Exception as e:
-        print(f"Warning: Could not drop caches: {e}")
+        pass
+        #print(f"Warning: Could not drop caches: {e}")
 
     with open(fname, "r") as f:
         lines = f.readlines()
@@ -28,7 +30,7 @@ def thread_task(thread_num):
     time.sleep(0.2)
 
 def process_task(proc_num):
-    print(f"Process {proc_num} started, PID: {os.getpid()}")
+    #print(f"Process {proc_num} started, PID: {os.getpid()}")
     threads = []
     for t in range(2):
         th = threading.Thread(target=thread_task, args=(t,))
@@ -36,7 +38,7 @@ def process_task(proc_num):
         threads.append(th)
     for th in threads:
         th.join()
-    print(f"Process {proc_num} finished, PID: {os.getpid()}")
+    #print(f"Process {proc_num} finished, PID: {os.getpid()}")
 
 if __name__ == "__main__":
     filename = "a.txt"
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         f.flush()
     with open(filename, "r") as f:
         read_num = f.read().strip()
-    print(f"Random number written and read from {filename}: {read_num}")
+    #print(f"Random number written and read from {filename}: {read_num}")
     os.remove(filename)
 
     thread_task('000')
@@ -58,7 +60,7 @@ if __name__ == "__main__":
         processes.append(proc)
     for proc in processes:
         proc.join()
-    print("All processes and threads finished.")
+    #print("All processes and threads finished.")
 
 ######################################################################
 """
@@ -85,5 +87,4 @@ def infinite_running_loop():
 if __name__ == "__main__":
     print(f"PID: {os.getpid()}")
     infinite_running_loop()
-
 """

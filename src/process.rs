@@ -12,12 +12,10 @@ use crate::{args::Args, duration::format_duration, monitor::Monitor};
 use tokio::{
     process::{Child, Command},
     spawn,
-    task::JoinHandle,
 };
 
 #[derive(serde::Serialize)]
 pub struct Process {
-    pub pid: u32,
     pub exit_status: i32,
     pub duration: String,
     pub signal: String,
@@ -25,34 +23,33 @@ pub struct Process {
 }
 
 impl Process {
-    pub async fn run_process(args: Args) -> Self {
+    pub fn run_process(args: Args) -> impl Future<Output = Self> + Send {
         let start_time: Instant = Instant::now();
         let child: Child = Self::init_process(args);
 
         let pid: u32 = child.id().unwrap_or(0);
 
-        let monitor_awaitable: JoinHandle<Monitor> = spawn(Monitor::monitor_process(pid));
+        let monitor_awaitable = spawn(Monitor::monitor_process(pid));
 
-        let child_output: Output = child
-            .wait_with_output()
-            .await
-            .expect("Failed to wait on child");
-
-        let exit_status: i32 = child_output.status.code().unwrap_or_default();
-
-        let res: Process = Process {
-            pid,
-            exit_status,
-            duration: format_duration(start_time.elapsed()),
-            signal: Self::get_signal(&child_output),
-            monitor: monitor_awaitable
+        async move {
+            let child_output: Output = child
+                .wait_with_output()
                 .await
-                .expect("Failed to await monitor process"),
-        };
+                .expect("Failed to wait on child");
 
-        res.save_to_json_file();
+            let exit_status: i32 = child_output.status.code().unwrap_or_default();
 
-        res
+            let res: Process = Process {
+                exit_status,
+                duration: format_duration(start_time.elapsed()),
+                signal: Self::get_signal(&child_output),
+                monitor: monitor_awaitable.await.unwrap(),
+            };
+
+            res.save_to_json_file();
+
+            res
+        }
     }
 
     fn init_process(args: Args) -> Child {

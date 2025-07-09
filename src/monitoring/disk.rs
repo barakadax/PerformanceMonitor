@@ -2,7 +2,7 @@ use crate::avg::LinkedList;
 use std::u64;
 use sysinfo::{DiskUsage, Pid, ProcessStatus, ProcessesToUpdate, System};
 
-pub async fn disk(pid: Pid) -> ((u64, f64, u64), (u64, f64, u64)) {
+pub fn disk(pid: Pid) -> impl Future<Output = ((u64, f64, u64), (u64, f64, u64))> + Send {
     let mut sys: System = System::new_all();
     let mut read_max: u64 = 0;
     let mut read_avg: LinkedList = LinkedList::new();
@@ -43,8 +43,12 @@ pub async fn disk(pid: Pid) -> ((u64, f64, u64), (u64, f64, u64)) {
         }
     }
 
-    (
-        (read_max, read_avg.average(), read_min),
-        (write_max, write_avg.average(), write_min),
-    )
+    let avg_read_res: f64 = read_avg.average();
+    let avg_write_res: f64 = write_avg.average();
+    async move {
+        (
+            (read_max, avg_read_res, read_min),
+            (write_max, avg_write_res, write_min),
+        )
+    }
 }

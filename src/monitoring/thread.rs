@@ -5,7 +5,7 @@ use std::{
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 
 #[cfg(target_os = "linux")]
-pub async fn threads(pid: u32) -> (Vec<u32>, u16) {
+pub fn threads(pid: u32) -> impl Future<Output = (Vec<u32>, u16)> + Send {
     let pid_for_monitor: Pid = Pid::from_u32(pid);
     let mut sys: System = System::new_all();
     let mut threads: HashSet<_> = HashSet::new();
@@ -38,7 +38,7 @@ pub async fn threads(pid: u32) -> (Vec<u32>, u16) {
         }
     }
 
-    (threads.into_iter().collect(), max)
+    async move { (threads.into_iter().collect(), max) }
 }
 
 #[cfg(target_os = "macos")]

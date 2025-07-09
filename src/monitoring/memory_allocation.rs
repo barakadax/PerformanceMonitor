@@ -8,7 +8,7 @@ use std::{
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 
 #[cfg(target_os = "linux")]
-pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
+pub fn memory_allocation(pid: u32) -> impl Future<Output = ((u64, f64, u64), (u64, f64, u64))> + Send {
     let pid_for_monitor: Pid = Pid::from_u32(pid);
     let mut sys: System = System::new_all();
 
@@ -77,10 +77,14 @@ pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
         }
     }
 
-    (
-        (stack_max, stack_avg.average(), stack_min),
-        (heap_max, heap_avg.average(), heap_min),
-    )
+    let avg_stack_res: f64 = stack_avg.average();
+    let avg_heap_res: f64 = heap_avg.average();
+    async move {
+        (
+            (stack_max, avg_stack_res, stack_min),
+            (heap_max, avg_heap_res, heap_min),
+        )
+    }
 }
 
 #[cfg(target_os = "macos")]

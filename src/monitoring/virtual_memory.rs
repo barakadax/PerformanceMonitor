@@ -2,7 +2,7 @@ use crate::avg::LinkedList;
 use std::u64;
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 
-pub async fn virtual_memory(pid: Pid) -> (u64, f64, u64) {
+pub fn virtual_memory(pid: Pid) -> impl Future<Output = (u64, f64, u64)> + Send {
     let mut sys: System = System::new_all();
     let mut max: u64 = 0;
     let mut avg: LinkedList = LinkedList::new();
@@ -32,5 +32,6 @@ pub async fn virtual_memory(pid: Pid) -> (u64, f64, u64) {
         }
     }
 
-    (max, avg.average(), min)
+    let avg_res: f64 = avg.average();
+    async move { (max, avg_res, min) }
 }

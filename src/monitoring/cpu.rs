@@ -1,7 +1,7 @@
 use crate::avg::LinkedList;
 use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 
-pub async fn cpu(pid: Pid) -> (f32, f64, f32) {
+pub fn cpu(pid: Pid) -> impl Future<Output = (f32, f64, f32)> + Send {
     let mut sys: System = System::new_all();
     let cpu_count: f32 = sys.cpus().len() as f32;
     let mut max: f32 = 0.0;
@@ -31,5 +31,6 @@ pub async fn cpu(pid: Pid) -> (f32, f64, f32) {
         }
     }
 
-    (max, avg.average(), min)
+    let avg_res: f64 = avg.average();
+    async move { (max, avg_res, min) }
 }

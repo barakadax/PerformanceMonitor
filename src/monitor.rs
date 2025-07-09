@@ -1,11 +1,6 @@
 use crate::monitoring::{
-    child_process::ChildProcess,
-    cpu::cpu,
-    disk::disk,
-    memory::memory,
-    memory_allocation::memory_allocation,
-    thread::threads,
-    virtual_memory::virtual_memory,
+    child_process::ChildProcess, cpu::cpu, disk::disk, memory::memory,
+    memory_allocation::memory_allocation, thread::threads, virtual_memory::virtual_memory,
 };
 use std::u64;
 use sysinfo::Pid;

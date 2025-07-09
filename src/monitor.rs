@@ -1,6 +1,11 @@
 use crate::monitoring::{
-    child_process::child_processes, cpu::cpu, disk::disk, memory::memory,
-    memory_allocation::memory_allocation, thread::threads, virtual_memory::virtual_memory,
+    child_process::ChildProcess,
+    cpu::cpu,
+    disk::disk,
+    memory::memory,
+    memory_allocation::memory_allocation,
+    thread::threads,
+    virtual_memory::virtual_memory,
 };
 use std::u64;
 use sysinfo::Pid;
@@ -33,8 +38,7 @@ pub struct Monitor {
     pub heap_min: u64,
     pub max_concurrent_threads: u16,
     pub thread_ids: Vec<u32>,
-    pub max_concurrent_child_processes: u16,
-    pub child_processes: Vec<Monitor>,
+    pub child_processes: ChildProcess,
 }
 
 impl Monitor {
@@ -53,8 +57,8 @@ impl Monitor {
             let memory_allocation_awaitable: JoinHandle<((u64, f64, u64), (u64, f64, u64))> =
                 spawn(memory_allocation(pid));
             let threads_awaitable: JoinHandle<(Vec<u32>, u16)> = spawn(threads(pid));
-            let child_processes_awaitable: JoinHandle<(Vec<Monitor>, u16)> =
-                spawn(child_processes(pid));
+            let child_processes_awaitable: JoinHandle<ChildProcess> =
+                spawn(ChildProcess::child_processes(pid));
 
             let (
                 memory_res,
@@ -83,8 +87,10 @@ impl Monitor {
             let ((stack_max, stack_avg, stack_min), (heap_max, heap_avg, heap_min)) =
                 memory_allocation_res.unwrap_or(((0, 0.0, 0), (0, 0.0, 0)));
             let (thread_ids, max_concurrent_threads) = threads_res.unwrap_or((Vec::new(), 0));
-            let (child_processes, max_concurrent_child_processes) =
-                child_processes_res.unwrap_or((Vec::new(), 0));
+            let child_processes: ChildProcess = child_processes_res.unwrap_or(ChildProcess {
+                max_concurrent_child_processes: 0,
+                child_processes: Vec::new(),
+            });
 
             Monitor {
                 pid,
@@ -111,7 +117,6 @@ impl Monitor {
                 heap_min,
                 max_concurrent_threads,
                 thread_ids,
-                max_concurrent_child_processes,
                 child_processes,
             }
         }

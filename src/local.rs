@@ -20,6 +20,7 @@ mod avg;
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     init_logging();
+    //console_subscriber::init();
 
     let args: Args = Args::new();
     let command_to_run: String = args.get_concat_args();

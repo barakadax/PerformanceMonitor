@@ -1,8 +1,10 @@
 use crate::avg::LinkedList;
-use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
+use sysinfo::{MINIMUM_CPU_UPDATE_INTERVAL, Pid, ProcessStatus, ProcessesToUpdate, System};
 
 use std::fs::OpenOptions;
 use std::io::Write;
+//use std::thread::sleep;
+use tokio::time::sleep;
 
 pub fn cpu(pid: Pid) -> impl Future<Output = (f32, f64, f32)> + Send {
     let mut sys: System = System::new_all();
@@ -19,7 +21,8 @@ pub fn cpu(pid: Pid) -> impl Future<Output = (f32, f64, f32)> + Send {
 
     async move {
         loop {
-            tokio::task::yield_now().await;
+            //tokio::task::yield_now().await;
+            sleep(MINIMUM_CPU_UPDATE_INTERVAL).await;
 
             sys.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
 

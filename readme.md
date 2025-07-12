@@ -52,3 +52,9 @@ Other OS compile commands:
 cargo build --target x86_64-pc-windows-gnu --bin local/service --release
 cargo build --target x86_64-apple-darwin --bin local/service --release
 cargo build --target x86_64-unknown-linux-gnu --bin local/service --release
+
+### Profiler
+1. Remove `console-subscriber = "0.2"` from comment in `Cargo.toml`
+2. in `local.rs` put in comment the init logging and uncomment `console_subscriber::init();`
+3. Run in 1 instance of terminal `tokio-console`
+4. Run: `RUST_BACKTRACE=full RUST_BACKTRACE=1 RUSTFLAGS="--cfg tokio_unstable" cargo run --bin local python3 a.py`

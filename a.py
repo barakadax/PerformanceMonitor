@@ -2,19 +2,21 @@ import multiprocessing
 import threading
 import os
 import random
+import time
 from concurrent.futures import ThreadPoolExecutor, wait
 
 def heavy_computation():
+    time.sleep(3.0)
     rand_value = random.randint(100_000_000, 999_999_999)
     for _ in range(rand_value):
         _ = 123456789 * 987654321 + 1000000000 - 543210987 / 12345
 
 def run_thread(thread_num: int):
     heavy_computation()
-    print(f"Thread iteration: {thread_num} started with PID: {os.getpid()} & thread id: {threading.get_native_id()}")
+    #print(f"Thread iteration: {thread_num} started with PID: {os.getpid()} & thread id: {threading.get_native_id()}")
 
 def run_process(state: bool):
-    print(f"Process started with PID: {os.getpid()} state: {state}")
+    #print(f"Process started with PID: {os.getpid()} state: {state}")
 
     if state:
         p1 = multiprocessing.Process(target=run_process, args=(False,))
@@ -28,7 +30,7 @@ def run_process(state: bool):
             futures = [executor.submit(run_thread, i) for i in range(4)]
             wait(futures)
 
-    print(f"Process {os.getpid()} completed.")
+    #print(f"Process {os.getpid()} completed.")
 
 if __name__ == "__main__":
     p1 = multiprocessing.Process(target=run_process, args=(True,))
@@ -38,7 +40,7 @@ if __name__ == "__main__":
     p1.join()
     p2.join()
 
-    print("Done Python code")
+    #print("Done Python code")
     exit(42)
 
 ######################################################################

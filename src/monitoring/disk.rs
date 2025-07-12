@@ -12,6 +12,10 @@ pub async fn disk(pid: Pid) -> ((u64, f64, u64), (u64, f64, u64)) {
     let mut write_min: u64 = u64::MAX;
 
     loop {
+        // prevent this loop from blocking,
+        // since this loop only exits if the process terminates
+        tokio::task::yield_now().await;
+
         sys.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
 
         if let Some(process) = sys.process(pid) {

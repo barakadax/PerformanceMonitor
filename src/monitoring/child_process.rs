@@ -12,13 +12,17 @@ pub struct ChildProcess {
 
 impl ChildProcess {
     #[cfg(target_os = "linux")]
-    pub fn child_processes(pid: u32) -> impl Future<Output = Self> + Send {
+    pub async fn child_processes(pid: u32) -> Self {
         let mut sys: System = System::new_all();
         let mut max: u16 = 0;
         let mut monitored_pids: Vec<u32> = Vec::new();
         let mut monitor_futures: Vec<JoinHandle<Monitor>> = Vec::new();
 
         loop {
+            // prevent this loop from blocking,
+            // since this loop only exits if the process terminates
+            tokio::task::yield_now().await;
+
             let pid_for_monitor: Pid = Pid::from_u32(pid);
             sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
             if let Some(process) = sys.process(pid_for_monitor) {
@@ -57,17 +61,15 @@ impl ChildProcess {
             }
         }
 
-        async move {
-            let results: Vec<Monitor> = join_all(monitor_futures)
-                .await
-                .into_iter()
-                .filter_map(Result::ok)
-                .collect();
+        let results: Vec<Monitor> = join_all(monitor_futures)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .collect();
 
-            ChildProcess {
-                max_concurrent_child_processes: max,
-                child_processes: results,
-            }
+        ChildProcess {
+            max_concurrent_child_processes: max,
+            child_processes: results,
         }
     }
 }

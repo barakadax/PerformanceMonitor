@@ -13,6 +13,10 @@ pub async fn threads(pid: u32) -> (Vec<u32>, u16) {
     let mut max: u16 = 0;
 
     loop {
+        // prevent this loop from blocking,
+        // since this loop only exits if the process terminates
+        tokio::task::yield_now().await;
+
         sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
         if let Some(process) = sys.process(pid_for_monitor) {
             if process.status() == ProcessStatus::Zombie {
@@ -56,6 +60,10 @@ pub async fn threads(pid: u32) -> (Vec<u32>, u16) {
     let mut max: u16 = 0;
 
     loop {
+        // prevent this loop from blocking,
+        // since this loop only exits if the process terminates
+        tokio::task::yield_now().await;
+
         sys.refresh_processes(ProcessesToUpdate::Some(&[pid_for_monitor]), true);
         if let Some(process) = sys.process(pid_for_monitor) {
             if process.status() == ProcessStatus::Zombie {

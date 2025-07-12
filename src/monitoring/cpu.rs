@@ -18,10 +18,13 @@ pub async fn cpu(pid: Pid) -> (f32, f64, f32) {
         .expect("Failed to open or create file");
 
     loop {
+        // prevent this loop from blocking,
+        // since this loop only exits if the process terminates
+        tokio::task::yield_now().await;
+
         sys.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
 
         if let Some(process) = sys.process(pid) {
-
             let log_line: String = format!("Monitoring CPU usage for process: {}", pid);
             writeln!(file, "{}", log_line).expect("Failed to write to file");
 

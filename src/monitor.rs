@@ -1,11 +1,6 @@
 use crate::monitoring::{
-    child_process::ChildProcess,
-    cpu::cpu,
-    disk::disk,
-    memory::memory,
-    memory_allocation::memory_allocation,
-    thread::threads,
-    virtual_memory::virtual_memory,
+    child_process::ChildProcess, cpu::cpu, disk::disk, memory::memory,
+    memory_allocation::memory_allocation, thread::threads, virtual_memory::virtual_memory,
 };
 use std::u64;
 use sysinfo::Pid;
@@ -51,6 +46,7 @@ impl Monitor {
             //let memory_awaitable: JoinHandle<(u64, f64, u64)> = spawn(memory(pid_for_monitor));
             //let virtual_memory_awaitable: JoinHandle<(u64, f64, u64)> =
             //    spawn(virtual_memory(pid_for_monitor));
+            let x = cpu(pid_for_monitor);
             let cpu_awaitable: JoinHandle<(f32, f64, f32)> = spawn(cpu(pid_for_monitor));
             //let disk_awaitable: JoinHandle<((u64, f64, u64), (u64, f64, u64))> =
             //    spawn(disk(pid_for_monitor));

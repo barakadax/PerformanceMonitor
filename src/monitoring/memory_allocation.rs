@@ -15,12 +15,12 @@ pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
     let path: PathBuf = PathBuf::from(format!("/proc/{}/smaps", pid));
 
     let mut heap_max: u64 = 0;
-    let mut heap_avg: LinkedList = LinkedList::new();
+    //let mut heap_avg: LinkedList = LinkedList::new();
     let mut heap_min: u64 = u64::MAX;
     let mut found_heap_flag: bool = false;
 
     let mut stack_max: u64 = 0;
-    let mut stack_avg: LinkedList = LinkedList::new();
+    //let mut stack_avg: LinkedList = LinkedList::new();
     let mut stack_min: u64 = u64::MAX;
     let mut found_stack_flag: bool = false;
 
@@ -53,7 +53,7 @@ pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
                         if heap_max < value {
                             heap_max = value;
                         }
-                        heap_avg.add(value as u128);
+                        //heap_avg.add(value as u128);
                         if heap_min > value {
                             heap_min = value;
                         }
@@ -66,7 +66,7 @@ pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
                         if stack_max < value {
                             stack_max = value;
                         }
-                        stack_avg.add(value as u128);
+                        //stack_avg.add(value as u128);
                         if stack_min > value {
                             stack_min = value;
                         }
@@ -77,10 +77,7 @@ pub async fn memory_allocation(pid: u32) -> ((u64, f64, u64), (u64, f64, u64)) {
         }
     }
 
-    (
-        (stack_max, stack_avg.average(), stack_min),
-        (heap_max, heap_avg.average(), heap_min),
-    )
+    ((stack_max, 0.0, stack_min), (heap_max, 0.0, heap_min))
 }
 
 #[cfg(target_os = "macos")]

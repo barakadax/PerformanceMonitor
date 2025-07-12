@@ -5,7 +5,7 @@ use sysinfo::{Pid, ProcessStatus, ProcessesToUpdate, System};
 pub async fn virtual_memory(pid: Pid) -> (u64, f64, u64) {
     let mut sys: System = System::new_all();
     let mut max: u64 = 0;
-    let mut avg: LinkedList = LinkedList::new();
+    //let mut avg: LinkedList = LinkedList::new();
     let mut min: u64 = u64::MAX;
 
     loop {
@@ -19,7 +19,7 @@ pub async fn virtual_memory(pid: Pid) -> (u64, f64, u64) {
             if max < memory {
                 max = memory;
             }
-            avg.add(memory as u128);
+            //avg.add(memory as u128);
             if min > memory {
                 min = memory;
             }
@@ -32,5 +32,5 @@ pub async fn virtual_memory(pid: Pid) -> (u64, f64, u64) {
         }
     }
 
-    (max, avg.average(), min)
+    (max, 0.0, min)
 }

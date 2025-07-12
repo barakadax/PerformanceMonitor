@@ -16,12 +16,14 @@ pub struct LinkedList {
 }
 
 impl Node {
-    pub fn new(counter: u32, sum: u32) -> Rc<RefCell<Node>> {
-        Rc::new(RefCell::new(Node {
-            counter,
-            sum,
-            next: None,
-        }))
+    pub fn new(counter: u32, sum: u32) -> impl Future<Output = Rc<RefCell<Node>>> + Send {
+        async move {
+            Rc::new(RefCell::new(Node {
+                counter,
+                sum,
+                next: None,
+            }))
+        }
     }
 
     fn can_add_data(&self, value: u32) -> bool {
@@ -35,15 +37,17 @@ impl Node {
 }
 
 impl LinkedList {
-    pub fn new() -> Self {
-        let initial_node: Rc<RefCell<Node>> = Node::new(0, 0);
-        LinkedList {
-            head: Some(Rc::clone(&initial_node)),
-            cursor: Some(initial_node),
+    pub fn new() -> impl Future<Output = Self> + Send {
+        async move {
+            let initial_node: Rc<RefCell<Node>> = Node::new(0, 0).await;
+            LinkedList {
+                head: Some(Rc::clone(&initial_node)),
+                cursor: Some(initial_node),
+            }
         }
     }
 
-    pub fn add(&mut self, mut value: u128) {
+    pub async fn add(&mut self, mut value: u128) {
         while value > 0 {
             let chunk: u32 = min(value, u32::MAX as u128) as u32;
             let cursor_rc: Rc<RefCell<Node>> = Rc::clone(self.cursor.as_ref().unwrap());
@@ -58,13 +62,13 @@ impl LinkedList {
                     continue;
                 }
             }
-            self.push(1, chunk);
+            self.push(1, chunk).await;
             value -= chunk as u128;
         }
     }
 
-    fn push(&mut self, counter: u32, sum: u32) {
-        let new_node: Rc<RefCell<Node>> = Node::new(counter, sum);
+    async fn push(&mut self, counter: u32, sum: u32) {
+        let new_node: Rc<RefCell<Node>> = Node::new(counter, sum).await;
         if let Some(old_cursor) = self.cursor.take() {
             old_cursor.borrow_mut().next = Some(Rc::clone(&new_node));
             self.cursor = Some(new_node);
@@ -74,7 +78,7 @@ impl LinkedList {
         }
     }
 
-    pub fn average(&self) -> f64 {
+    pub fn average(&self) -> impl Future<Output = f64> + Send {
         let mut pointer: Option<Rc<RefCell<Node>>> = self.head.as_ref().map(Rc::clone);
         let mut avg: f64 = 0.0;
         let mut count: f64 = 0.0;
@@ -89,6 +93,6 @@ impl LinkedList {
             pointer = node.next.as_ref().map(Rc::clone);
         }
 
-        if count > 0.0 { avg / count } else { 0.0 }
+        async move { if count > 0.0 { avg / count } else { 0.0 } }
     }
 }
